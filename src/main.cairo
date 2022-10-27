@@ -2,6 +2,7 @@
 from starkware.cairo.common.math import assert_nn, assert_not_zero
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.starknet.common.syscalls import get_caller_address
+from starkware.cairo.common.uint256 import Uint256, uint256_le, uint256_add, uint256_sub
 
 // mapping in cairo
 @storage_var
@@ -28,6 +29,9 @@ func periodicity() -> (res: felt) {
 func amount_to_buy() -> (res: felt) {
 }
 
+const ETH_TOKEN = 0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7;
+const USDC_TOKEN = 0x005a643907b9a4bc6a55e9069c4fd5fd1f5c79a22470690f75556c4736e34426;
+
 // Oracle Interface Definition
 const EMPIRIC_ORACLE_ADDRESS = 0x446812bac98c08190dee8967180f4e3cdcd1db9373ca269904acb17f67f7093;
 const PAIR_ID = 19514442401534788;  // str_to_felt("ETH/USD")
@@ -41,8 +45,25 @@ namespace IEmpiricOracle {
     }
 }
 
+// 10k Swap Interface Definition
+const TENK_SWAP_ADDRESS = 0x00975910cd99bc56bd289eaaa5cee6cd557f0ddafdb2ce6ebea15b158eb2c664;
+
+// 10K Swap Interface
+@contract_interface
+namespace I10kSwap {
+    func swapExactTokensForTokens(
+        amountIn: Uint256,
+        amountOutMin: Uint256,
+        path_len: felt,
+        path: felt*,
+        to: felt,
+        deadline: felt,
+    ) {
+    }
+}
+
 // Nostra Finance Interface
-const NOSTRA_SWAP_ADDRESS = 0x446812bac98c08190dee8967180f4e3cdcd1db9373ca269904acb17f67f7093;
+const NOSTRA_SWAP_ADDRESS = 0x0000000000000000;
 // Have I to send tokenA, tokenB and amount?
 
 // deposit to contract and make swap 50/50
@@ -76,13 +97,16 @@ func set_config{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}
     up_var: felt, down_var: felt, interval: felt, dca_amount: felt
 ) {
     with_attr error_message("Up Variation must be greater than zero. Got: {up_var}.") {
-        assert_not_zero(up_var);
+        assert_nn(up_var);
     }
     with_attr error_message("Down Variation must be greater than zero. Got: {down_var}.") {
-        assert_not_zero(down_var);
+        assert_nn(down_var);
     }
-    // interval 3, 7, 14, 30
+    with_attr error_message("Interval must be greater than zero. Got: {interval}.") {
+        assert_nn(interval);
+    }
 
+    // interval 3, 7, 14, 30
     // set storage
     up_variation.write(up_var);
     down_variation.write(down_var);

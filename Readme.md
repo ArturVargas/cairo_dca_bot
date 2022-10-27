@@ -4,7 +4,7 @@ This a contract to create a bot for making Dollar Cost Average in Automated way.
 
 ## Main Idea
 
-The idea is has a bot that gets the price from ETH/USD price from [Empiric Oracle](https://empiric.network/) and when the price goes down the bot execute a swap from usd-stablecoin to ETH, and when the price goes up the bot sell an amount from ETH to USD and in both case deposit in [Nostra finance](https://nostra.finance/) to generate some APY.
+The idea is has a bot that gets the price from ETH/USD price from [Empiric Oracle](https://empiric.network/) and when the price goes down the bot execute a swap from usd-stablecoin to ETH with [10k Swap](https://github.com/10k-swap/10k_swap-contracts), and when the price goes up the bot sell an amount from ETH to USD and in both case deposit in [Nostra finance](https://nostra.finance/) to generate some APY.
 
 ### Storage Variables
 
