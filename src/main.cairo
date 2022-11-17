@@ -45,41 +45,36 @@ namespace IEmpiricOracle {
     }
 }
 
-// 10k Swap Interface Definition
-const TENK_SWAP_ADDRESS = 0x00975910cd99bc56bd289eaaa5cee6cd557f0ddafdb2ce6ebea15b158eb2c664;
+// MySwap Interface Definition
+const MY_SWAP_ADDRESS = 0x018a439bcbb1b3535a6145c1dc9bc6366267d923f60a84bd0c7618f33c81d334;
 
-// 10K Swap Interface
+// MySwap Interface
 @contract_interface
-namespace I10kSwap {
-    func swapExactTokensForTokens(
-        amountIn: Uint256,
-        amountOutMin: Uint256,
-        path_len: felt,
-        path: felt*,
-        to: felt,
-        deadline: felt,
-    ) {
+namespace IMySwap {
+    func swap(
+        pool_id: felt, token_from_addr: felt, amount_from: Uint256, amount_to_min: Uint256
+    ) -> (test: felt) {
     }
 }
 
 // Nostra Finance Interface
-const NOSTRA_SWAP_ADDRESS = 0x0000000000000000;
+const NOSTRA_AMM_ADDRESS = 0x0000000000000000;
 // Have I to send tokenA, tokenB and amount?
 
 // deposit to contract and make swap 50/50
 // get amount on tokenA and make swap 50% to tokenB
-@external
-func deposit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    tokenA: felt, tokenB: felt, amount: felt
-) {
-    with_attr error_message("Amount must be positive. Got: {amount}.") {
-        assert_nn(amount);
-    }
-    // divide amount.
-    // swap by tokenB
-    // balance update
-    return ();
-}
+// @external
+// func deposit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+//     tokenA: felt, tokenB: felt, amount: felt
+// ) {
+//     with_attr error_message("Amount must be positive. Got: {amount}.") {
+//         assert_nn(amount);
+//     }
+//     // divide amount.
+//     // swap by tokenB
+//     // balance update
+//     return ();
+// }
 
 @external
 func dca_buy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
@@ -93,27 +88,17 @@ func dca_buy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() 
 }
 
 @external
-func set_config{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    up_var: felt, down_var: felt, interval: felt, dca_amount: felt
+func swap_bot{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(amount_from: felt, amount_to_min: felt) -> (
+    response: felt
 ) {
-    with_attr error_message("Up Variation must be greater than zero. Got: {up_var}.") {
-        assert_nn(up_var);
-    }
-    with_attr error_message("Down Variation must be greater than zero. Got: {down_var}.") {
-        assert_nn(down_var);
-    }
-    with_attr error_message("Interval must be greater than zero. Got: {interval}.") {
-        assert_nn(interval);
-    }
-
-    // interval 3, 7, 14, 30
-    // set storage
-    up_variation.write(up_var);
-    down_variation.write(down_var);
-    periodicity.write(interval);
-    amount_to_buy.write(dca_amount);
-
-    return ();
+    let (test) = IMySwap.swap(
+        MY_SWAP_ADDRESS,
+        1,
+        2087021424722619777119509474943472645767659996348769578120564519014510906823,
+        Uint256(amount_from, 0), // 1529265388067354
+        Uint256(amount_to_min, 0), // 1529265388067354
+    );
+    return (response=test);
 }
 
 @view
@@ -135,11 +120,33 @@ func get_balance{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     return (res,);
 }
 
-@constructor
-func constructor{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    let (sender) = get_caller_address();
+// SC: 0x2b9a71350b7195e9bb2350d409b047f1e74bb652db69b49d688d59e75eed287
 
-    balance.write(sender, 0);
+// MySwap
+// [
+//   "1", - pool_id
+//   "2087021424722619777119509474943472645767659996348769578120564519014510906823", token_from_addr
+//   "3781790703593631", - amount from
+//   "0",
+//   "1960000", - amount to min
+//   "0"
+// ]
 
-    return ();
-}
+// SithSwap -swapExactTokensForTokensSupportingFeeOnTransferTokens
+// [
+//   "6000000000000000", - Eth en Wei
+
+// "271289", - amount out min in usdc
+
+// "1", - routes len
+//   [
+//     {
+//         "2087021424722619777119509474943472645767659996348769578120564519014510906823",
+//         "159707947995249021625440365289670166666892266109381225273086299925265990694",
+//         "0",
+//     }
+//   ]
+//   "980032196447177943098570450793630356269173730602706106888817574652304964803", - to
+//   "1666907459"  - deadline
+// ]
+//

@@ -1,17 +1,40 @@
 [
     {
-        "inputs": [
-            {
-                "name": "amount",
-                "type": "felt"
-            }
-        ],
-        "name": "increase_balance",
+        "inputs": [],
+        "name": "dca_buy",
         "outputs": [],
         "type": "function"
     },
     {
         "inputs": [],
+        "name": "swap_bot",
+        "outputs": [
+            {
+                "name": "response",
+                "type": "felt"
+            }
+        ],
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "get_token_price",
+        "outputs": [
+            {
+                "name": "current_price",
+                "type": "felt"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "name": "account",
+                "type": "felt"
+            }
+        ],
         "name": "get_balance",
         "outputs": [
             {
@@ -21,11 +44,5 @@
         ],
         "stateMutability": "view",
         "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "constructor",
-        "outputs": [],
-        "type": "constructor"
     }
 ]
