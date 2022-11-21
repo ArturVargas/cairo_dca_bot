@@ -124,3 +124,10 @@ func executeTask{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr
     return ();
 }
  ```
+
+## Next Steps
+
+- Clean the code.
+- Add testing.
+- Improve Docs.
+- Try to implement as a feature in Bravos Wallet with AA (account abstraction).
