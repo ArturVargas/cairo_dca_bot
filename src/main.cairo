@@ -1,28 +1,21 @@
 %lang starknet
-from starkware.cairo.common.math import assert_nn, assert_not_zero
-from starkware.cairo.common.cairo_builtins import HashBuiltin
-from starkware.starknet.common.syscalls import get_caller_address
-from starkware.cairo.common.uint256 import Uint256, uint256_le, uint256_add, uint256_sub
 
-// mapping in cairo
-@storage_var
-func balance(account: felt) -> (balance: felt) {
-}
+from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.math_cmp import is_le
+from starkware.cairo.common.cairo_builtins import HashBuiltin
+from starkware.starknet.common.syscalls import (get_caller_address, get_block_timestamp)
+from starkware.cairo.common.uint256 import Uint256
 
 @storage_var
 func last_token_price() -> (res: felt) {
 }
 
 @storage_var
-func up_variation() -> (res: felt) {
-}
-
-@storage_var
-func down_variation() -> (res: felt) {
-}
-
-@storage_var
 func periodicity() -> (res: felt) {
+}
+
+@storage_var
+func last_execution() -> (res: felt) {
 }
 
 @storage_var
@@ -46,61 +39,22 @@ namespace IEmpiricOracle {
 }
 
 // MySwap Interface Definition
-const MY_SWAP_ADDRESS = 0x018a439bcbb1b3535a6145c1dc9bc6366267d923f60a84bd0c7618f33c81d334;
+const SWAP_ADDRESS = 0x018a439bcbb1b3535a6145c1dc9bc6366267d923f60a84bd0c7618f33c81d334;
 
 // MySwap Interface
 @contract_interface
-namespace IMySwap {
+namespace ISwap {
     func swap(
         pool_id: felt, token_from_addr: felt, amount_from: Uint256, amount_to_min: Uint256
     ) -> (test: felt) {
     }
 }
 
-// Nostra Finance Interface
+// Nostra Finance Interface - Currently Nostra Finance don't make publish his contracts
+// We cannot make deposits in his AMM yet
 const NOSTRA_AMM_ADDRESS = 0x0000000000000000;
-// Have I to send tokenA, tokenB and amount?
 
-// deposit to contract and make swap 50/50
-// get amount on tokenA and make swap 50% to tokenB
-// @external
-// func deposit{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-//     tokenA: felt, tokenB: felt, amount: felt
-// ) {
-//     with_attr error_message("Amount must be positive. Got: {amount}.") {
-//         assert_nn(amount);
-//     }
-//     // divide amount.
-//     // swap by tokenB
-//     // balance update
-//     return ();
-// }
-
-@external
-func dca_buy{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
-    // se consulta el oraculo con respecto a tokenB y se compara con respecto al ultimo precio
-    // en caso de que tokenB haya bajado más o igual al down_variation se toma un monto de tokenA y se
-    // compra de tokenB si el tokenB subio más o igual al up_variation se toma un monto de tokenB y se cambia
-    // por tokenA
-    // EJ. tokenA = USDC tokenB = ETH
-    //  Se deposita en el pool de nostra finance.
-    return ();
-}
-
-@external
-func swap_bot{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(amount_from: felt, amount_to_min: felt) -> (
-    response: felt
-) {
-    let (test) = IMySwap.swap(
-        MY_SWAP_ADDRESS,
-        1,
-        2087021424722619777119509474943472645767659996348769578120564519014510906823,
-        Uint256(amount_from, 0), // 1529265388067354
-        Uint256(amount_to_min, 0), // 1529265388067354
-    );
-    return (response=test);
-}
-
+// Get ETH price from EmpiricNetwork Oracle
 @view
 func get_token_price{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (
     current_price: felt
@@ -112,41 +66,85 @@ func get_token_price{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check
     return (current_price=eth_price);
 }
 
+// This function has the logic for buy or sell.
 @view
-func get_balance{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
-    account: felt
-) -> (res: felt) {
-    let (res) = balance.read(account);
-    return (res,);
+func get_action{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    alloc_locals;
+    let (current_price) = get_token_price();
+    let (last_price) = last_token_price.read();
+
+    tempvar action = is_le(last_price, current_price); // lp <= cp
+    let (amount) = amount_to_buy.read();
+
+    if(action == 0) {
+        // buy eth
+        let (result) = swap_bot(amount, amount - 1);
+        return();
+    }
+
+    if(action == 1) {
+        // sell eth
+        let (result) = swap_bot(amount, amount - 1);
+        return();
+    }
+    return ();
 }
 
-// SC: 0x2b9a71350b7195e9bb2350d409b047f1e74bb652db69b49d688d59e75eed287
+// get last time when the task was executed
+@view
+func last_executed{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() ->(_result: felt) {
+    let (last_time_executed) = last_execution.read();
+    return (_result = last_time_executed);
+}
 
-// MySwap
-// [
-//   "1", - pool_id
-//   "2087021424722619777119509474943472645767659996348769578120564519014510906823", token_from_addr
-//   "3781790703593631", - amount from
-//   "0",
-//   "1960000", - amount to min
-//   "0"
-// ]
+// Yagi Integration
+@view
+func probeTask{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() -> (_taskReady: felt) {
+    let (lastExecuted) = last_execution.read();
+    let (block_time) = get_block_timestamp();
+    let (_periodicity) = periodicity.read();
+    let deadline = lastExecuted + (_periodicity * 84600);
+    let taskReady = is_le(deadline, block_time);
 
-// SithSwap -swapExactTokensForTokensSupportingFeeOnTransferTokens
-// [
-//   "6000000000000000", - Eth en Wei
+    return(_taskReady = taskReady); 
+}
 
-// "271289", - amount out min in usdc
+// Set bot Params
+@external
+func set_bot_params{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(
+    _amount: felt, _periodicity: felt
+) {
+    amount_to_buy.write(_amount);
+    periodicity.write(_periodicity);
+    let (eth_price) = get_token_price();
+    last_token_price.write(eth_price);
 
-// "1", - routes len
-//   [
-//     {
-//         "2087021424722619777119509474943472645767659996348769578120564519014510906823",
-//         "159707947995249021625440365289670166666892266109381225273086299925265990694",
-//         "0",
-//     }
-//   ]
-//   "980032196447177943098570450793630356269173730602706106888817574652304964803", - to
-//   "1666907459"  - deadline
-// ]
-//
+    return();
+}
+
+// Yagi Intergration
+// Yagi Keepers call this function whe probeTask returns true
+@external
+func executeTask{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}() {
+    get_action();
+    let (get_time) = get_block_timestamp();
+    last_execution.write(get_time);
+
+    let (eth_price) = get_token_price();
+    last_token_price.write(eth_price);
+
+    return ();
+}
+
+func swap_bot{syscall_ptr: felt*, pedersen_ptr: HashBuiltin*, range_check_ptr}(amount_from: felt, amount_to_min: felt) -> (
+    response: felt
+) {
+    let (test) = ISwap.swap(
+        SWAP_ADDRESS,
+        1,
+        2087021424722619777119509474943472645767659996348769578120564519014510906823,
+        Uint256(amount_from, 0), // 1529265388067354
+        Uint256(amount_to_min, 0), // 1529265388067354
+    );
+    return (response=test);
+}

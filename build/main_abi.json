@@ -1,23 +1,6 @@
 [
     {
         "inputs": [],
-        "name": "dca_buy",
-        "outputs": [],
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "swap_bot",
-        "outputs": [
-            {
-                "name": "response",
-                "type": "felt"
-            }
-        ],
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "get_token_price",
         "outputs": [
             {
@@ -29,20 +12,55 @@
         "type": "function"
     },
     {
-        "inputs": [
-            {
-                "name": "account",
-                "type": "felt"
-            }
-        ],
-        "name": "get_balance",
+        "inputs": [],
+        "name": "get_action",
+        "outputs": [],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "last_executed",
         "outputs": [
             {
-                "name": "res",
+                "name": "_result",
                 "type": "felt"
             }
         ],
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "probeTask",
+        "outputs": [
+            {
+                "name": "_taskReady",
+                "type": "felt"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "name": "_amount",
+                "type": "felt"
+            },
+            {
+                "name": "_periodicity",
+                "type": "felt"
+            }
+        ],
+        "name": "set_bot_params",
+        "outputs": [],
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "executeTask",
+        "outputs": [],
         "type": "function"
     }
 ]
